@@ -3,221 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم سوق عزان الشاملة 🔐</title>
+    <title>سوق عزان الموحد 🛒</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#004d40">
+
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
+    
     <style>
-        :root { --primary: #004d40; --orange: #ff6d00; --bg: #f0f4f7; --red: #d32f2f; }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding: 20px; direction: rtl; }
-        .container { max-width: 600px; margin: auto; }
+        :root { --primary: #004d40; --orange: #ff6d00; --bg: #f4f7f6; --white: #ffffff; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding: 0; color: #333; overflow-x: hidden; }
         
-        /* شاشة الدخول */
-        #adminAuth { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .auth-card { background: white; padding: 30px; border-radius: 25px; text-align: center; width: 85%; max-width: 350px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-7px); }
+            50% { transform: translateX(7px); }
+            75% { transform: translateX(-7px); }
+        }
+        .error-shake { animation: shake 0.4s ease-in-out; border: 2.5px solid #e74c3c !important; }
 
-        /* الكروت */
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 5px solid var(--primary); position: relative; }
-        .contest-card { border-top-color: var(--orange); background: #fffcf0; }
+        .header { background: linear-gradient(135deg, var(--primary), #00796b); color: white; padding: 35px 20px 55px; text-align: center; border-radius: 0 0 30px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
+        .header h1 { margin: 0; font-size: 1.8rem; font-weight: 900; }
+        .refresh-btn { position: absolute; top: 5px; right: 15px; background: #ffffff; border: none; color: var(--primary); padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; font-family: 'Tajawal'; font-weight: 800; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 1000; }
         
-        h2 { font-weight: 900; color: var(--primary); text-align: center; margin-top: 0; font-size: 1.4rem; }
-        label { font-weight: 700; display: block; margin-top: 15px; color: #555; font-size: 0.9rem; }
+        .main-content { padding: 0 15px; margin-top: -30px; position: relative; z-index: 10; }
+        .section-card { background: var(--white); border-radius: 20px; padding: 18px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        input, select, textarea { width: 100%; padding: 14px; margin-top: 8px; border-radius: 12px; border: 1.5px solid #eee; font-family: 'Tajawal'; box-sizing: border-box; outline: none; transition: 0.3s; }
-        input:focus, textarea:focus { border-color: var(--primary); }
+        .winner-box-fixed { background: #fff9c4; padding: 10px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #f1c40f; text-align: center; font-weight: 800; color: #d35400; font-size: 1rem; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 
-        .btn-main { width: 100%; padding: 16px; margin-top: 15px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 1rem; }
-        .btn-main:active { transform: scale(0.96); }
-        .btn-orange { background: var(--orange); }
+        #statusToast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); padding: 16px 35px; border-radius: 50px; color: white; font-weight: 800; z-index: 10000; transition: 0.5s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        .grid-small { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .offer-box { background: #fff; border: 1px solid #eee; border-radius: 18px; padding: 18px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .offer-box:active { transform: scale(0.95); }
+        
+        .status-tag { font-size: 0.7rem; font-weight: 800; padding: 3px 10px; border-radius: 8px; margin-top: 5px; display: inline-block; }
+        .has { color: #2e7d32; background: #e8f5e9; }
+        .none { color: #9e9e9e; background: #f5f5f5; }
 
-        /* إدارة المحلات */
-        .store-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
-        .store-info b { color: var(--primary); font-size: 1.1rem; }
-        .store-actions { display: flex; gap: 8px; margin-top: 8px; }
-        .btn-small { padding: 6px 12px; border-radius: 8px; border: none; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-        .btn-del { background: #ffebee; color: var(--red); }
-        .btn-copy { background: #e8f5e9; color: #2e7d32; }
-
-        /* تنبيه النجاح */
-        #toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 25px; border-radius: 50px; z-index: 10000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 700; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .directory-list { display: flex; overflow-x: auto; gap: 10px; padding: 5px 0 15px; scrollbar-width: none; }
+        .dir-pill { background: var(--primary); color: white; padding: 12px 22px; border-radius: 30px; font-size: 0.9rem; font-weight: 700; white-space: nowrap; cursor: pointer; border: none; }
+        
+        .merchant-btn-style { width: 100%; padding: 18px; border-radius: 18px; border: none; background: var(--primary); color: white; font-family: 'Tajawal'; font-weight: 800; cursor: pointer; margin-top: -15px; margin-bottom: 20px; }
+        
+        .full-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 5000; overflow-y: auto; }
+        .top-nav { background: white; padding: 15px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .back-btn { background: #f0f0f0; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; }
+        
+        .m-input { width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 14px; border: 1.5px solid #ddd; font-family: 'Tajawal'; font-size: 1rem; box-sizing: border-box; }
+        .m-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--primary); color: white; font-weight: 800; font-size: 1.1rem; cursor: pointer; }
+        .product-card { background: white; margin: 12px 15px; padding: 18px; border-radius: 20px; border-right: 6px solid #ddd; }
     </style>
 </head>
 <body>
 
-<audio id="waterSnd"><source src="https://www.soundjay.com/nature/sounds/water-droplet-1.mp3"></audio>
+    <audio id="waterSnd" preload="auto">
+        <source src="https://www.soundjay.com/misc/sounds/water-droplet-1.mp3">
+    </audio>
 
-<div id="toast">✅ تم التحديث بنجاح</div>
+    <div id="statusToast"></div>
 
-<div id="adminAuth">
-    <div class="auth-card">
-        <div style="font-size: 4rem; margin-bottom: 10px;">🔐</div>
-        <h3 style="margin: 0 0 20px;">دخول الإدارة العامة</h3>
-        <input type="password" id="adminPass" placeholder="أدخل الرمز السري">
-        <button class="btn-main" onclick="checkAuth()">دخول اللوحة</button>
+    <div class="header">
+        <button class="refresh-btn" onclick="playWater(); location.reload()">🔄 تحديث</button>
+        <h1>سوق عزان الموحد 🛒</h1>
+        <p>عروض المحلات والمسابقات في مكان واحد</p>
     </div>
-</div>
 
-<div class="container" id="adminPanel" style="display:none;">
-    
-    <div class="card contest-card">
-        <h2 style="color: var(--orange);">🌙 التحكم بمسابقة رمضان</h2>
+    <div class="main-content">
+        <div id="winnerDiv" class="winner-box-fixed">🏆 الفائز: <span id="wName"></span></div>
+
+        <div class="section-card">
+            <div class="title-label" style="font-weight: 800; margin-bottom: 10px;">🔥 عروض وتخفيضات اليوم</div>
+            <div class="grid-small">
+                <div class="offer-box" onclick="openGlobalOffers('مطاعم وكفتيريا', '🍔')"><span>🍔</span><br><b>المطاعم</b><span id="st-مطاعم وكفتيريا" class="status-tag none">...</span></div>
+                <div class="offer-box" onclick="openGlobalOffers('مواد غذائية', '🍎')"><span>🍎</span><br><b>الغذاء</b><span id="st-مواد غذائية" class="status-tag none">...</span></div>
+                <div class="offer-box" onclick="openGlobalOffers('مواد بناء وسباكة', '🏗️')"><span>🏗️</span><br><b>البناء</b><span id="st-مواد بناء وسباكة" class="status-tag none">...</span></div>
+                <div class="offer-box" onclick="openGlobalOffers('مواد كهرباء', '⚡')"><span>⚡</span><br><b>الكهرباء</b><span id="st-مواد كهرباء" class="status-tag none">...</span></div>
+            </div>
+        </div>
+
+        <div class="section-card" style="background:transparent; box-shadow:none; padding:0;">
+            <div class="title-label" style="font-weight: 800; margin-bottom: 10px;">📂 دليل محلات عزان</div>
+            <div class="directory-list">
+                <div class="dir-pill" onclick="openFullDirectory('مطاعم وكفتيريا')">🏘️ المطاعم</div>
+                <div class="dir-pill" onclick="openFullDirectory('مواد غذائية')">🍱 البقالات</div>
+                <div class="dir-pill" onclick="openFullDirectory('مواد بناء وسباكة')">🛠️ البناء</div>
+                <div class="dir-pill" onclick="openFullDirectory('مواد كهرباء')">⚡ الكهرباء</div>
+            </div>
+        </div>
+
+        <button onclick="openPage('merchantPage')" class="merchant-btn-style">🔐 لوحة تحكم المحلات</button>
+    </div>
+
+    <div id="merchantPage" class="full-page">
+        <div class="top-nav"><button class="back-btn" onclick="closePage('merchantPage')">➜</button><h3>لوحة التاجر</h3></div>
+        <div id="mAuthArea" style="padding: 25px;">
+            <input type="password" id="mCode" class="m-input" placeholder="أدخل الرمز السري لمحلك">
+            <button class="m-btn" onclick="loginMerchant()">دخول</button>
+        </div>
+        <div id="mControlArea" style="display:none; padding: 25px;">
+            <div id="storeNameDisp" style="padding:15px; background:var(--primary); color:white; border-radius:15px; margin-bottom:20px; font-weight:bold; text-align:center;"></div>
+            <input type="text" id="pName" class="m-input" placeholder="اسم السلعة">
+            <input type="text" id="pPrice" class="m-input" placeholder="السعر">
+            <select id="pType" class="m-input"><option value="offer">🔥 عرض وتخفيض</option><option value="normal">📦 بضاعة عادية</option></select>
+            <button class="m-btn" onclick="addProduct()">نشر الآن ✅</button>
+            <div id="mMyProds" style="margin-top:25px;"></div>
+            <button onclick="logoutMerchant()" style="color:red; background:none; border:none; width:100%; margin-top:30px; cursor:pointer; font-weight:900;">تسجيل الخروج</button>
+        </div>
+    </div>
+
+    <div id="offersPage" class="full-page"><div class="top-nav"><button class="back-btn" onclick="closePage('offersPage')">➜</button><h3 id="pgTitle"></h3></div><div id="offersList"></div></div>
+    <div id="directoryPage" class="full-page"><div class="top-nav"><button class="back-btn" onclick="closePage('directoryPage')">➜</button><h3 id="dirTitle"></h3></div><div id="dirStoresList"></div></div>
+    <div id="storeViewPage" class="full-page"><div class="top-nav"><button class="back-btn" onclick="closePage('storeViewPage')">➜</button><h3 id="svTitle"></h3></div><div id="svProducts"></div></div>
+
+    <script>
+        // إعدادات الـ Manifest لتثبيته كتطبيق
+        const manifest = {
+            "name": "سوق عزان الموحد",
+            "short_name": "سوق عزان",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#f4f7f6",
+            "theme_color": "#004d40",
+            "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/3081/3081840.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const link = document.createElement('link'); link.rel = 'manifest'; link.href = URL.createObjectURL(blob); document.head.appendChild(link);
+
+        // Firebase Setup
+        const firebaseConfig = { databaseURL: "https://souq-tarim-default-rtdb.firebaseio.com/" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // نظام الصوت
+        function playWater() { const snd = document.getElementById('waterSnd'); snd.currentTime = 0; snd.play().catch(e => {}); }
         
-        <label>حالة المسابقة في الصفحة الرئيسية:</label>
-        <select id="cStatus" onchange="playWater()">
-            <option value="off">❌ إخفاء المسابقة (تعطيل)</option>
-            <option value="on">✅ إظهار المسابقة (تفعيل)</option>
-        </select>
-
-        <label>سؤال المسابقة:</label>
-        <textarea id="cQuestion" rows="3" placeholder="اكتب سؤال اليوم هنا..."></textarea>
-        
-        <label>حالة إعلان الفائز:</label>
-        <select id="winStatus" onchange="playWater()">
-            <option value="off">❌ مسطور (مخفي)</option>
-            <option value="on">✅ مفتوح (ظاهر)</option>
-        </select>
-
-        <label>اسم الفائز المحظوظ:</label>
-        <input type="text" id="cWinner" placeholder="اسم الفائز">
-
-        <button class="btn-main btn-orange" onclick="saveContest()">تحديث المسابقة الآن 🚀</button>
-    </div>
-
-    <div class="card">
-        <h2>🏪 إضافة محل (تاجر) جديد</h2>
-        <input type="text" id="storeName" placeholder="اسم المحل">
-        <input type="text" id="storePhone" placeholder="رقم واتساب المحل">
-        <select id="storeCat">
-            <option value="مواد غذائية">مواد غذائية</option>
-            <option value="مطاعم وكفتيريا">مطاعم وكفتيريا</option>
-            <option value="مواد بناء وسباكة">مواد بناء وسباكة</option>
-            <option value="مواد كهرباء">مواد كهرباء</option>
-            <option value="سلع متنوعة وأخرى">سلع متنوعة وأخرى</option>
-        </select>
-        <button class="btn-main" onclick="addStore()">توليد كود التفعيل والنشر ✅</button>
-    </div>
-
-    <div class="card">
-        <h2>📋 دليل المحلات والأكواد</h2>
-        <input type="text" id="search" placeholder="ابحث عن محل..." onkeyup="filterStores()">
-        <div id="storesList" style="margin-top: 20px;"></div>
-    </div>
-
-</div>
-
-<script>
-    const ADMIN_KEY = "123456"; // رمز دخولك الخاص
-    const firebaseConfig = { databaseURL: "https://souq-tarim-default-rtdb.firebaseio.com/" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    function playWater() { 
-        const s = document.getElementById('waterSnd');
-        s.currentTime = 0; s.play(); 
-    }
-
-    function showToast(msg, bg="#333") {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.style.background = bg;
-        t.style.top = "30px";
-        setTimeout(() => { t.style.top = "-100px"; }, 3000);
-    }
-
-    function checkAuth() {
-        if(document.getElementById('adminPass').value === ADMIN_KEY) {
-            playWater();
-            document.getElementById('adminAuth').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            syncData();
-        } else { alert("الرمز غير صحيح!"); }
-    }
-
-    function syncData() {
-        db.ref('RamadanContest').on('value', snap => {
-            const d = snap.val();
-            if(d) {
-                document.getElementById('cStatus').value = d.status || 'off';
-                document.getElementById('cQuestion').value = d.question || '';
-                document.getElementById('cWinner').value = d.winner || '';
-                // جلب حالة إعلان الفائز
-                document.getElementById('winStatus').value = d.winStatus || 'off';
-            }
-        });
-        loadStores();
-    }
-
-    function saveContest() {
-        playWater();
-        db.ref('RamadanContest').update({
-            status: document.getElementById('cStatus').value,
-            question: document.getElementById('cQuestion').value,
-            winner: document.getElementById('cWinner').value,
-            winStatus: document.getElementById('winStatus').value // حفظ الحالة الجديدة
-        }).then(() => showToast("🚀 تم تحديث المسابقة بنجاح", "var(--orange)"));
-    }
-
-    function addStore() {
-        const name = document.getElementById('storeName').value;
-        const phone = document.getElementById('storePhone').value;
-        const cat = document.getElementById('storeCat').value;
-        if(!name || !phone) return alert("أكمل البيانات");
-
-        playWater();
-        const code = "AZ-" + Math.floor(1000 + Math.random() * 9000);
-        db.ref('Stores/' + code).set({ name, phone, category: cat }).then(() => {
-            showToast("✅ تم إضافة المحل وتوليد الكود");
-            document.getElementById('storeName').value = "";
-            document.getElementById('storePhone').value = "";
-        });
-    }
-
-    function loadStores() {
-        db.ref('Stores').on('value', snap => {
-            const list = document.getElementById('storesList');
-            list.innerHTML = "";
-            const data = snap.val();
-            if(!data) return list.innerHTML = "لا يوجد محلات حالياً";
-            
-            Object.keys(data).forEach(id => {
-                list.innerHTML += `
-                    <div class="store-item" data-name="${data[id].name}">
-                        <div class="store-info">
-                            <b>${data[id].name}</b><br>
-                            <small>${data[id].category}</small>
-                            <div class="store-actions">
-                                <button class="btn-small btn-copy" onclick="copyCode('${id}')">نسخ كود الدخول</button>
-                                <button class="btn-small btn-del" onclick="deleteStore('${id}')">حذف</button>
-                            </div>
-                        </div>
-                        <div style="text-align:left; font-weight:900; color:var(--primary); font-family:monospace;">${id}</div>
-                    </div>`;
-            });
-        });
-    }
-
-    function copyCode(code) {
-        playWater();
-        navigator.clipboard.writeText(code);
-        showToast("📋 تم نسخ الكود: " + code);
-    }
-
-    function deleteStore(id) {
-        if(confirm("هل أنت متأكد من حذف المحل؟ سيتم حذف جميع عروضه أيضاً!")) {
-            playWater();
-            db.ref('Stores/' + id).remove();
-            db.ref('Products/' + id).remove();
-            showToast("🗑️ تم حذف المحل");
+        function showMsg(msg, isSuccess) { 
+            const t = document.getElementById('statusToast'); t.innerText = msg; 
+            t.style.background = isSuccess ? "#2ecc71" : "#e74c3c"; t.style.top = "20px"; 
+            playWater(); setTimeout(() => t.style.top = "-100px", 3000); 
         }
-    }
 
-    function filterStores() {
-        const val = document.getElementById('search').value.toLowerCase();
-        document.querySelectorAll('.store-item').forEach(item => {
-            item.style.display = item.dataset.name.toLowerCase().includes(val) ? "flex" : "none";
-        });
-    }
-</script>
+        function openPage(id) { playWater(); document.getElementById(id).style.display='block'; if(id==='merchantPage') checkAuth(); }
+        function closePage(id) { playWater(); document.getElementById(id).style.display='none'; }
+
+        // نظام تحديث الحالة (لمعرفة هل يوجد عروض أم لا)
+        function syncStatus() {
+            db.ref('Stores').on('value', sSnap => {
+                const stores = sSnap.val() || {};
+                db.ref('Products').on('value', pSnap => {
+                    const products = pSnap.val() || {};
+                    const cats = ['مواد غذائية', 'مطاعم وكفتيريا', 'مواد بناء وسباكة', 'مواد كهرباء'];
+                    cats.forEach(c => {
+                        let hasOffer = false;
+                        Object.keys(stores).forEach(sid => {
+                            if(stores[sid].category === c && products[sid]) {
+                                Object.values(products[sid]).forEach(p => { if(p.type === 'offer') hasOffer = true; });
+                            }
+                        });
+                        const el = document.getElementById('st-'+c);
+                        if(el) {
+                            el.innerText = hasOffer ? "✅ يوجد عروض" : "لا يوجد عروض";
+                            el.className = "status-tag " + (hasOffer ? "has" : "none");
+                        }
+                    });
+                });
+            });
+        }
+        syncStatus();
+
+        // عرض العروض
+        function openGlobalOffers(cat, icon) {
+            playWater();
+            document.getElementById('pgTitle').innerText = icon + " عروض " + cat;
+            const list = document.getElementById('offersList');
+            list.innerHTML = "<p style='text-align:center; padding:20px;'>جاري البحث...</p>";
+            openPage('offersPage');
+            
+            db.ref('Stores').once('value', sSnap => {
+                const stores = sSnap.val() || {};
+                db.ref('Products').once('value', pSnap => {
+                    list.innerHTML = "";
+                    const allP = pSnap.val() || {};
+                    let found = false;
+                    Object.keys(stores).forEach(sid => {
+                        if(stores[sid].category === cat && allP[sid]) {
+                            Object.values(allP[sid]).forEach(p => {
+                                if(p.type==='offer') {
+                                    found = true;
+                                    list.innerHTML += `<div class="product-card"><b>${p.name}</b> <span style="float:left; color:var(--orange); font-weight:900;">${p.price}</span><br><small>🏪 ${stores[sid].name}</small></div>`;
+                                }
+                            });
+                        }
+                    });
+                    if(!found) list.innerHTML = "<p style='text-align:center; padding:50px; color:#999;'>لا توجد عروض حالياً</p>";
+                });
+            });
+        }
+
+        // لوحة التاجر
+        function loginMerchant() { 
+            const codeEl = document.getElementById('mCode'); const code = codeEl.value.trim(); 
+            if(!code) { codeEl.classList.add('error-shake'); setTimeout(() => codeEl.classList.remove('error-shake'), 400); return; }
+            db.ref('Stores/' + code).once('value', s => { 
+                if(s.exists()){ localStorage.setItem('azKey', code); localStorage.setItem('azName', s.val().name); showMerchantUI(); showMsg("🔓 تم الدخول", true); } 
+                else { codeEl.classList.add('error-shake'); showMsg("❌ الرمز غير صحيح", false); } 
+            }); 
+        }
+
+        function addProduct() { 
+            const key = localStorage.getItem('azKey'); const nEl = document.getElementById('pName'); const pEl = document.getElementById('pPrice'); 
+            if(!nEl.value || !pEl.value) { showMsg("⚠️ أكمل البيانات", false); return; }
+            db.ref('Products/' + key).push({ name: nEl.value, price: pEl.value, type: document.getElementById('pType').value }).then(() => { showMsg("✅ تم النشر", true); nEl.value=""; pEl.value=""; }); 
+        }
+
+        function checkAuth() { if(localStorage.getItem('azKey')) showMerchantUI(); }
+        function showMerchantUI() { document.getElementById('mAuthArea').style.display = 'none'; document.getElementById('mControlArea').style.display = 'block'; document.getElementById('storeNameDisp').innerText = "🏪 متجر: " + localStorage.getItem('azName'); loadMyProducts(); }
+        function loadMyProducts() { db.ref('Products/' + localStorage.getItem('azKey')).on('value', snap => { const list = document.getElementById('mMyProds'); list.innerHTML = ""; snap.forEach(p => { list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;"><span><b>${p.val().name}</b></span><button onclick="deleteProd('${p.key}')" style="color:red; border:none; background:none; cursor:pointer;">حذف</button></div>`; }); }); }
+        function deleteProd(pid) { if(confirm("هل تريد الحذف؟")) db.ref('Products/' + localStorage.getItem('azKey') + '/' + pid).remove(); }
+        function logoutMerchant() { localStorage.clear(); location.reload(); }
+
+        // الدليل وتصفح المحلات
+        function openFullDirectory(cat) { playWater(); document.getElementById('dirTitle').innerText = "دليل " + cat; const list = document.getElementById('dirStoresList'); list.innerHTML = ""; openPage('directoryPage'); db.ref('Stores').once('value', snap => { snap.forEach(s => { if(s.val().category === cat) list.innerHTML += `<div class="product-card" onclick="viewStore('${s.key}', '${s.val().name}', '${s.val().phone}')"><b>${s.val().name}</b><br><small>تصفح ➜</small></div>`; }); }); }
+        function viewStore(id, name, phone) { playWater(); document.getElementById('svTitle').innerText = name; const list = document.getElementById('svProducts'); list.innerHTML = ""; openPage('storeViewPage'); db.ref('Products/' + id).once('value', snap => { snap.forEach(p => { list.innerHTML += `<div class="product-card"><b>${p.val().name}</b><br>السعر: ${p.val().price}</div>`; }); list.innerHTML += `<div style="text-align:center; padding:20px;"><a href="tel:${phone}" class="m-btn" style="text-decoration:none; background:#2ecc71; display:block;">📞 اتصل بالمحل</a></div>`; }); }
+    </script>
 </body>
 </html>
